@@ -14,5 +14,9 @@ fun main(_args: Array<String>) {
             }
         }
     }
-    println(elves)
+    val max = elves.fold(0, { acc, elem ->
+        val sum = elem.sum()
+        if (acc > sum) { acc } else { sum }
+    })
+    println(max)
 }
