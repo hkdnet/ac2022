@@ -14,9 +14,7 @@ fun main(_args: Array<String>) {
             }
         }
     }
-    val max = elves.fold(0, { acc, elem ->
-        val sum = elem.sum()
-        if (acc > sum) { acc } else { sum }
-    })
-    println(max)
+    val sorted = elves.map { it.sum() }.sortedBy{ -it }
+    val sum: Int = sorted.take(3).sum()
+    println(sum)
 }
