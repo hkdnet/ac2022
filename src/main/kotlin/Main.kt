@@ -1,7 +1,18 @@
-fun main(args: Array<String>) {
-    println("Hello World!")
-
-    // Try adding program arguments via Run/Debug configuration.
-    // Learn more about running applications: https://www.jetbrains.com/help/idea/running-applications.html.
-    println("Program arguments: ${args.joinToString()}")
+fun main(_args: Array<String>) {
+    val elves: MutableList<List<Int>> = mutableListOf()
+    var tmp: MutableList<Int> = mutableListOf()
+    l@ while (true) {
+        val line = readLine()
+        when (line) {
+            null -> l@break;
+            "" -> {
+                elves.add(tmp);
+                tmp = mutableListOf()
+            }
+            else -> {
+                tmp.add(line.toInt())
+            }
+        }
+    }
+    println(elves)
 }
