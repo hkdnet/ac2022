@@ -5,45 +5,54 @@ enum class Result {
     WIN, DRAW, LOSE
 }
 
-val Normalized = mapOf(
+val NormalizedHand = mapOf(
     "A" to Hand.ROCK,
     "B" to Hand.PAPER,
     "C" to Hand.SCISSORS,
-    "X" to Hand.ROCK,
-    "Y" to Hand.PAPER,
-    "Z" to Hand.SCISSORS
+)
+val NormalizedResult = mapOf(
+    "X" to Result.LOSE,
+    "Y" to Result.DRAW,
+    "Z" to Result.WIN,
 )
 val Scores = mapOf(Hand.ROCK to 1, Hand.PAPER to 2, Hand.SCISSORS to 3);
 
-fun vs(op: Hand, me: Hand): Result {
-    if (op == me) {
-        return Result.DRAW
-    }
-    if (
-        op == Hand.ROCK && me == Hand.PAPER ||
-        op == Hand.PAPER && me == Hand.SCISSORS ||
-        op == Hand.SCISSORS && me == Hand.ROCK
-    ) {
-        return Result.WIN
-    }
-    return Result.LOSE
+val handTable = mapOf(
+    Hand.ROCK to mapOf(
+        Result.DRAW to Hand.ROCK,
+        Result.WIN  to Hand.PAPER,
+        Result.LOSE to Hand.SCISSORS,
+    ),
+    Hand.PAPER to mapOf(
+        Result.DRAW to Hand.PAPER,
+        Result.WIN  to Hand.SCISSORS,
+        Result.LOSE to Hand.ROCK,
+    ),
+    Hand.SCISSORS to mapOf(
+        Result.DRAW to Hand.SCISSORS,
+        Result.WIN  to Hand.ROCK,
+        Result.LOSE to Hand.PAPER,
+    ),
+)
+fun myHand(op: Hand, res: Result): Hand {
+    return handTable.getValue(op).getValue(res)
 }
 
 @Suppress("UNUSED_PARAMETER")
 fun main(_args: Array<String>) {
-    val rounds = mutableListOf<Pair<Hand, Hand>>()
+    val rounds = mutableListOf<Pair<Hand, Result>>()
     while (true) {
         val line = readLine()
         if (line == null) {
             break;
         }
         val arr = line.split(" ")
-        val h1 = Normalized.getValue(arr[0])
-        val h2 = Normalized.getValue(arr[1])
-        rounds.add(Pair(h1, h2))
+        val h = NormalizedHand.getValue(arr[0])
+        val r = NormalizedResult.getValue(arr[1])
+        rounds.add(Pair(h, r))
     }
-    val points = rounds.map { (opponent, mine) ->
-        val result = vs(opponent, mine)
+    val points = rounds.map { (opponent, result) ->
+        val mine = myHand(opponent, result)
         when (result) {
             Result.DRAW -> 3 + Scores.getValue(mine)
             Result.WIN -> 6 + Scores.getValue(mine)
