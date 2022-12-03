@@ -1,62 +1,43 @@
-enum class Hand {
-    ROCK, PAPER, SCISSORS
-}
-enum class Result {
-    WIN, DRAW, LOSE
-}
+fun intersect(s1: String, s2: String): Char {
+    val cs1 = s1.toCharArray().sorted()
+    val cs2 = s2.toCharArray().sorted()
+    var i1 = 0
+    var i2 = 0
+    while (i1 < cs1.size && i2 < cs2.size) {
+        val c1 = cs1[i1]
+        val c2 = cs2[i2]
+        if (c1 == c2) return c1
 
-val NormalizedHand = mapOf(
-    "A" to Hand.ROCK,
-    "B" to Hand.PAPER,
-    "C" to Hand.SCISSORS,
-)
-val NormalizedResult = mapOf(
-    "X" to Result.LOSE,
-    "Y" to Result.DRAW,
-    "Z" to Result.WIN,
-)
-val Scores = mapOf(Hand.ROCK to 1, Hand.PAPER to 2, Hand.SCISSORS to 3);
-
-val handTable = mapOf(
-    Hand.ROCK to mapOf(
-        Result.DRAW to Hand.ROCK,
-        Result.WIN  to Hand.PAPER,
-        Result.LOSE to Hand.SCISSORS,
-    ),
-    Hand.PAPER to mapOf(
-        Result.DRAW to Hand.PAPER,
-        Result.WIN  to Hand.SCISSORS,
-        Result.LOSE to Hand.ROCK,
-    ),
-    Hand.SCISSORS to mapOf(
-        Result.DRAW to Hand.SCISSORS,
-        Result.WIN  to Hand.ROCK,
-        Result.LOSE to Hand.PAPER,
-    ),
-)
-fun myHand(op: Hand, res: Result): Hand {
-    return handTable.getValue(op).getValue(res)
+        if (c1 < c2) {
+            i1 += 1
+        } else {
+            i2 += 1
+        }
+    }
+    1 / 0 // unreachable!!!
+    return '-'
 }
 
 @Suppress("UNUSED_PARAMETER")
 fun main(_args: Array<String>) {
-    val rounds = mutableListOf<Pair<Hand, Result>>()
+    val rucksacks = mutableListOf<Pair<String, String>>()
     while (true) {
-        val line = readLine()
+        val line = readLine();
         if (line == null) {
             break;
         }
-        val arr = line.split(" ")
-        val h = NormalizedHand.getValue(arr[0])
-        val r = NormalizedResult.getValue(arr[1])
-        rounds.add(Pair(h, r))
+
+        val len = line.length
+        val s1 = line.substring(0, len/2)
+        val s2 = line.substring(len/2, len)
+        rucksacks.add(Pair(s1, s2))
     }
-    val points = rounds.map { (opponent, result) ->
-        val mine = myHand(opponent, result)
-        when (result) {
-            Result.DRAW -> 3 + Scores.getValue(mine)
-            Result.WIN -> 6 + Scores.getValue(mine)
-            Result.LOSE -> 0 + Scores.getValue(mine)
+    val points = rucksacks.map { (s1, s2) ->
+        val c = intersect(s1, s2)
+        if (c >= 'a') {
+            c.code - 'a'.code + 1
+        } else {
+            c.code - 'A'.code + 27
         }
     }
 
