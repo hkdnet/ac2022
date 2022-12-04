@@ -1,10 +1,10 @@
 typealias WorkRange = Pair<Int, Int>
 
-fun fullCover(r1: WorkRange, r2: WorkRange): Boolean {
+fun overlap(r1: WorkRange, r2: WorkRange): Boolean {
     val (a1, a2) = r1
     val (b1, b2) = r2
-    return (a1 <= b1 && b1 <= a2 && a1 <= b2 && b2 <= a2) ||
-            (b1 <= a1 && a1 <= b2 && b1 <= a2 && a2 <= b2)
+    return (a1 <= b1 && b1 <= a2) || (a1 <= b2 && b2 <= a2) ||
+            (b1 <= a1 && a1 <= b2) || (b1 <= a2 && a2 <= b2)
 }
 
 @Suppress("UNUSED_PARAMETER")
@@ -24,7 +24,7 @@ fun main(_args: Array<String>) {
         )
     }
     val points = assignments.map { (r1, r2) ->
-        if (fullCover(r1, r2)) {
+        if (overlap(r1, r2)) {
             1
         } else {
             0
