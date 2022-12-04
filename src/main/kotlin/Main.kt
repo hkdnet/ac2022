@@ -1,44 +1,35 @@
-fun intersect(s1: String, s2: String, s3: String): Char {
-    val cs1 = s1.toCharArray().toSet()
-    val cs2 = s2.toCharArray().toSet()
-    val cs3 = s3.toCharArray().toSet()
-    for (c in cs1) {
-        if (cs2.contains(c) && cs3.contains(c)) {
-            return c
-        }
-    }
-    1 / 0 // unreachable!!!
-    return '-'
-}
+typealias WorkRange = Pair<Int, Int>
 
-fun toPoint(c: Char): Int {
-    return if (c >= 'a') {
-            c.code - 'a'.code + 1
-        } else {
-            c.code - 'A'.code + 27
-        }
+fun fullCover(r1: WorkRange, r2: WorkRange): Boolean {
+    val (a1, a2) = r1
+    val (b1, b2) = r2
+    return (a1 <= b1 && b1 <= a2 && a1 <= b2 && b2 <= a2) ||
+            (b1 <= a1 && a1 <= b2 && b1 <= a2 && a2 <= b2)
 }
 
 @Suppress("UNUSED_PARAMETER")
 fun main(_args: Array<String>) {
-    val l = mutableListOf<Char>()
+    val assignments = mutableListOf<Pair<WorkRange, WorkRange>>()
     while (true) {
-        val s1 = readLine();
-        if (s1 == null) {
+        val s = readLine();
+        if (s == null) {
             break;
         }
-        val s2 = readLine();
-        if (s2 == null) {
-            break;
-        }
-        val s3 = readLine();
-        if (s3 == null) {
-            break;
-        }
-        val c = intersect(s1, s2, s3)
-        l.add(c)
+        val a = s.split(",").map { it.split("-").map(String::toInt) }
+        assignments.add(
+            Pair(
+                Pair(a[0][0], a[0][1]),
+                Pair(a[1][0], a[1][1]),
+            )
+        )
     }
-    val points = l.map { toPoint(it) }
+    val points = assignments.map { (r1, r2) ->
+        if (fullCover(r1, r2)) {
+            1
+        } else {
+            0
+        }
+    }
 
     println(points.sum())
 }
