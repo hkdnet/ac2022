@@ -35,7 +35,7 @@ fun main(_args: Array<String>) {
         for (c in 0 until move) {
             tmp.add(df.removeLast())
         }
-        for (c in tmp) {
+        for (c in tmp.reversed()) {
             dt.addLast(c)
         }
     }
