@@ -1,35 +1,44 @@
-typealias WorkRange = Pair<Int, Int>
+val moveFromTo = Regex("""^move (\d+) from (\d+) to (\d+)$""")
 
-fun overlap(r1: WorkRange, r2: WorkRange): Boolean {
-    val (a1, a2) = r1
-    val (b1, b2) = r2
-    return (a1 <= b1 && b1 <= a2) || (a1 <= b2 && b2 <= a2) ||
-            (b1 <= a1 && a1 <= b2) || (b1 <= a2 && a2 <= b2)
-}
+typealias Operation = Triple<Int, Int, Int>
 
 @Suppress("UNUSED_PARAMETER")
 fun main(_args: Array<String>) {
-    val assignments = mutableListOf<Pair<WorkRange, WorkRange>>()
-    while (true) {
-        val s = readLine();
-        if (s == null) {
-            break;
+    var s = readln()
+    val n = (s.length + 1) / 4
+    val ds = Array<ArrayDeque<Char>>(n + 1) { ArrayDeque<Char>() }
+    while (s != "") {
+        val cs = s.toCharArray()
+        for (i in 0 until n) {
+            val idx = 4 * i + 1
+            val c = cs[idx]
+            if (c in 'A'..'Z') {
+                ds[i + 1].addFirst(c)
+            }
         }
-        val a = s.split(",").map { it.split("-").map(String::toInt) }
-        assignments.add(
-            Pair(
-                Pair(a[0][0], a[0][1]),
-                Pair(a[1][0], a[1][1]),
-            )
-        )
+        s = readln()
     }
-    val points = assignments.map { (r1, r2) ->
-        if (overlap(r1, r2)) {
-            1
-        } else {
-            0
-        }
+    val ops = mutableListOf<Operation>()
+    while (true) {
+        val s = readlnOrNull() ?: break
+        val match = moveFromTo.matchEntire(s)!!
+        val move = match.groups[1]!!.value.toInt()
+        val from = match.groups[2]!!.value.toInt()
+        val to = match.groups[3]!!.value.toInt()
+        ops.add(Triple(move, from, to))
     }
 
-    println(points.sum())
+    for ((move, from, to) in ops) {
+        val df = ds[from]
+        val dt = ds[to]
+        val tmp = mutableListOf<Char>()
+        for (c in 0 until move) {
+            tmp.add(df.removeLast())
+        }
+        for (c in tmp) {
+            dt.addLast(c)
+        }
+    }
+    val ans = ds.drop(1).map { it.last() }.joinToString("")
+    println(ans)
 }
