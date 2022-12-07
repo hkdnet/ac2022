@@ -42,7 +42,7 @@ fun main(_args: Array<String>) {
                     }
                 }
             }
-            println("cd-ed to $cur by $cmd")
+            // println("cd-ed to $cur by $cmd")
         } else if (cmd == "$ ls") {
             val refs = mutableListOf<String>()
             var size = 0
@@ -81,7 +81,17 @@ fun main(_args: Array<String>) {
         calc(key)
     }
 
-    val ans = memo.values.filter { it <= 100_000 }.sum()
-
-    println(ans)
+    val rootSize = calc("/")
+    val total = 70_000_000
+    val threshold = 30_000_000
+    val left = total - rootSize
+    val requiredSize = threshold - left
+    println("$requiredSize is required to be deleted")
+    val sorted = memo.toList().sortedBy { p -> p.second }
+    for ((f, size) in sorted) {
+        println("%10d: $f".format(size))
+    }
+    val e = sorted.find { it.second >= requiredSize }!!
+    println(e)
+    println(e.second)
 }
