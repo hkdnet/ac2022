@@ -11,9 +11,8 @@ fun readLines(): List<String> {
 
 fun solve(ms: List<Move>): Int {
     val s = mutableSetOf<Point>()
-    var h = Pair(0, 0)
-    var t = Pair(0, 0)
-    s.add(t)
+    val knots = MutableList(10) { Pair(0, 0) }
+    s.add(Pair(0, 0))
 
     fun isTouching(p1: Point, p2: Point): Boolean {
         val (x1, y1) = p1
@@ -57,9 +56,11 @@ fun solve(ms: List<Move>): Int {
 
     for ((direction, step) in ms) {
         repeat(step) {
-            h = direction.step(h)
-            t = followIfNecessary(h, t)
-            s.add(t)
+            knots[0] = direction.step(knots[0])
+            for (i in 1 until knots.size) {
+                knots[i] = followIfNecessary(knots[i-1], knots[i])
+            }
+            s.add(knots.last())
             // println("$h and $t")
         }
     }
