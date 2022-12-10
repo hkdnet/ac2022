@@ -9,89 +9,63 @@ fun readLines(): List<String> {
     return l
 }
 
-fun solve(ms: List<Move>): Int {
-    val s = mutableSetOf<Point>()
-    val knots = MutableList(10) { Pair(0, 0) }
-    s.add(Pair(0, 0))
-
-    fun isTouching(p1: Point, p2: Point): Boolean {
-        val (x1, y1) = p1
-        val (x2, y2) = p2
-        return x2 in x1 - 1..x1 + 1 && y2 in y1 - 1..y1 + 1
+fun solve(ops: List<Operation>): Int {
+    val checkpoints = mutableListOf<Int>()
+    var e = Pair(0, 1)
+    fun normalizeClock(c: Int): Int {
+        return (c + 20) % 40
     }
-
-    fun followIfNecessary(head: Point, tail: Point): Point {
-        if (isTouching(head, tail)) {
-            return tail
+    for (op in ops) {
+        val (oldClock, oldValue) = e
+        e = op.apply(e)
+        println(e)
+        val newClock = e.first
+        if (normalizeClock(oldClock) > normalizeClock(newClock)) {
+            checkpoints.add(oldValue)
         }
-
-        val (x1, y1) = head
-        val (x2, y2) = tail
-
-        return if (x1 == x2) {
-            if (y1 < y2) {
-                Pair(x2, y2 - 1)
-            } else {
-                Pair(x2, y2 + 1)
-            }
-        } else if (y1 == y2) {
-            if (x1 < x2) {
-                Pair(x2 - 1, y2)
-            } else {
-                Pair(x2 + 1, y2)
-            }
-        } else {
-            when (Pair(x1 < x2, y1 < y2)) {
-                Pair(true, true) -> Pair(x2 - 1, y2 - 1)
-                Pair(true, false) -> Pair(x2 - 1, y2 + 1)
-                Pair(false, true) -> Pair(x2 + 1, y2 - 1)
-                Pair(false, false) -> Pair(x2 + 1, y2 + 1)
-                else -> {
-                    assert(false)
-                    Pair(0, 0)
-                }
-            }
+        if (e.first > 220) {
+            println("too many operations")
+            break
         }
     }
-
-    for ((direction, step) in ms) {
-        repeat(step) {
-            knots[0] = direction.step(knots[0])
-            for (i in 1 until knots.size) {
-                knots[i] = followIfNecessary(knots[i-1], knots[i])
-            }
-            s.add(knots.last())
-            // println("$h and $t")
-        }
-    }
-
-    return s.size
+    println("$checkpoints")
+    val points = checkpoints.withIndex().map { (idx, v) -> (20 + 40 * idx) * v }
+    println("$points")
+    return points.sum()
 }
 
-typealias Move = Pair<Direction, Int>
+typealias Env = Pair<Int, Int>
 
-enum class Direction {
-    U, D, L, R;
+sealed interface Operation {
+    abstract fun apply(e: Env): Env
+}
 
-    fun step(p: Point): Point {
-        val (x, y) = p
-        return when (this) {
-            Direction.D -> Pair(x, y - 1)
-            Direction.U -> Pair(x, y + 1)
-            Direction.L -> Pair(x - 1, y)
-            Direction.R -> Pair(x + 1, y)
-        }
+object Noop : Operation {
+    override fun apply(e: Env): Env {
+        val (clock, register) = e
+        return Pair(clock + 1, register)
     }
 }
-typealias Point = Pair<Int, Int>
+
+data class Addx(val v: Int) : Operation {
+    override fun apply(e: Env): Env {
+        val (clock, register) = e
+        return Pair(clock + 2, register + v)
+    }
+}
+
 
 @Suppress("UNUSED_PARAMETER")
 fun main(_args: Array<String>) {
-    fun parse(): List<Move> {
+    fun parse(): List<Operation> {
         val lines = readLines()
         return lines.map {
-            val a = it.split(" ")
-            Pair(Direction.valueOf(a[0]), a[1].toInt())
+            if (it == "noop") {
+                Noop
+            } else {
+                val v = it.split(" ")[1].toInt()
+                Addx(v)
+            }
         }
     }
     println(solve(parse()))
