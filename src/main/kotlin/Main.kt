@@ -1,5 +1,3 @@
-import java.io.File
-
 fun readLines(): List<String> {
     val l = mutableListOf<String>()
     while (true) {
@@ -10,34 +8,44 @@ fun readLines(): List<String> {
 }
 
 fun solve(ops: List<Operation>): Int {
-    val checkpoints = mutableListOf<Int>()
-    var e = Pair(0, 1)
-    fun normalizeClock(c: Int): Int {
-        return (c + 20) % 40
-    }
+    val xs = mutableListOf(1)
+    var x = 1
     for (op in ops) {
-        val (oldClock, oldValue) = e
-        e = op.apply(e)
-        println(e)
-        val newClock = e.first
-        if (normalizeClock(oldClock) > normalizeClock(newClock)) {
-            checkpoints.add(oldValue)
-        }
-        if (e.first > 220) {
-            println("too many operations")
-            break
+        when (op) {
+            Noop -> {
+                xs.add(x)
+            }
+
+            is Addx -> {
+                xs.add(x)
+                x += op.v
+                xs.add(x)
+            }
         }
     }
-    println("$checkpoints")
-    val points = checkpoints.withIndex().map { (idx, v) -> (20 + 40 * idx) * v }
-    println("$points")
-    return points.sum()
+    fun show() {
+        for (i in 0 until 240) {
+            val middle = xs[i]
+            if (i % 40 in middle - 1..middle + 1) {
+                print("#")
+            } else {
+                print(".")
+            }
+            if (i % 40 == 39) {
+                print("\n")
+            }
+        }
+    }
+
+    show()
+
+    return 1
 }
 
 typealias Env = Pair<Int, Int>
 
 sealed interface Operation {
-    abstract fun apply(e: Env): Env
+    fun apply(e: Env): Env
 }
 
 object Noop : Operation {
