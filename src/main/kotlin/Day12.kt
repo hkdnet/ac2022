@@ -47,17 +47,22 @@ class Day12(val f: List<CharArray>) {
         steps[x][y] = step
     }
 
+    private fun elevationOf(cur: Pair<Int, Int>): Char {
+        val (x, y) = cur
+        return f[x][y]
+    }
+
     private fun solve(): Int {
         normalize()
         val q = ArrayDeque<Pair<Int, Int>>()
-        setStepOf(start, 0)
-        q.addLast(start)
+        setStepOf(end, 0)
+        q.addLast(end)
         while (q.isNotEmpty()) {
             val cur = q.removeFirst()
             val curStep = stepOf(cur)
             val newStep = curStep + 1
             for (reachable in reachables(cur)) {
-                if (reachable == end) {
+                if (elevationOf(reachable) == 'a') {
                     return newStep
                 }
                 if (stepOf(reachable) > newStep) {
@@ -69,6 +74,7 @@ class Day12(val f: List<CharArray>) {
 
         return -1
     }
+
     private fun normalize() {
         val (sx, sy) = start
         f[sx][sy] = 'a'
@@ -79,14 +85,14 @@ class Day12(val f: List<CharArray>) {
     private fun reachables(cur: Pair<Int, Int>): List<Pair<Int, Int>> {
         val (x, y) = cur
         val l = listOf(Pair(x - 1, y), Pair(x + 1, y), Pair(x, y - 1), Pair(x, y + 1))
-        return l.filter { (xx, yy) ->
+        return l.filter { nextCandidate ->
+            val (xx, yy) = nextCandidate
             if (
                 xx !in 0 until h || yy !in 0 until w
             ) {
                 false
             } else {
-                f[xx][yy] <= f[x][y] + 1
-                // f[xx][yy] == f[x][y] || f[xx][yy] == f[x][y] + 1
+                elevationOf(cur) - 1 <= elevationOf(nextCandidate)
             }
         }
     }
