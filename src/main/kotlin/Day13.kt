@@ -1,7 +1,7 @@
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.*
 
-class Day13(val packetPairs: List<Pair<JsonElement, JsonElement>>) {
+class Day13(val packets: List<JsonElement>) {
     companion object {
         fun exec() {
             val packetPairs = parse(readLines())
@@ -10,36 +10,32 @@ class Day13(val packetPairs: List<Pair<JsonElement, JsonElement>>) {
             println(ans)
         }
 
-        private fun parse(lines: List<String>): List<Pair<JsonElement, JsonElement>> {
-            val l = mutableListOf<Pair<JsonElement, JsonElement>>()
+        private fun parse(lines: List<String>): List< JsonElement> {
+            val l = mutableListOf<JsonElement>()
             var idx = 0
             while (idx < lines.size) {
                 val left = Json.decodeFromString<JsonElement>(lines[idx])
                 idx += 1 // to right
                 val right = Json.decodeFromString<JsonElement>(lines[idx])
                 idx += 2 // to next left
-                l.add(
-                    Pair(left, right)
-                )
+                l.add(left)
+                l.add(right)
             }
             return l
         }
     }
 
     private fun solve(): Int {
-        return packetPairs.map { (l, r) ->
-            if (l is JsonArray && r is JsonArray) {
-                isOrdered(l, r)!!
-            } else {
-                throw Exception("should not reach here")
-            }
-        }.withIndex().sumOf { (idx, flag) ->
-            if (flag) {
-                idx + 1
-            } else {
-                0
-            }
+        val sorted = packets.sortedWith{ l, r ->
+            if (isOrdered(l as JsonArray, r as JsonArray)!!) { -1 } else { 1 }
         }
+        val separator1 = buildJsonArray { add(buildJsonArray { add(2) }) }
+        val separator2 = buildJsonArray { add(buildJsonArray { add(6) }) }
+
+        // + 1 because the problem uses 1-origin
+        val idx1 = sorted.indexOfFirst { !isOrdered(it as JsonArray, separator1)!! } + 1
+        val idx2 = sorted.indexOfFirst { !isOrdered(it as JsonArray, separator2)!! } + 1
+        return idx1 * (idx2 + 1) // Use idx2 + 1 because separator 1 was inserted
     }
 
     private fun isOrdered(l: JsonArray, r: JsonArray): Boolean? {
@@ -109,7 +105,6 @@ class Day13(val packetPairs: List<Pair<JsonElement, JsonElement>>) {
             }
             idx += 1
         }
-        return true
     }
 
     private fun isOrdered(l: JsonArray, r: JsonPrimitive): Boolean? {
