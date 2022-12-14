@@ -41,12 +41,16 @@ class Day14(private val pointLists: List<List<Day14Point>>) {
 
     private fun getCell(p: Day14Point): Day14Cell? {
         val (x, y) = p
+        // NOTE: h is 1-origin. The y-axis is 0-origin. So + 2 does not work here.
+        if (y == h + 1) {
+            return Day14Cell.Wall
+        }
         return f[y]?.get(x)
     }
 
     private fun setCell(p: Day14Point, v: Day14Cell) {
         val (x, y) = p
-        f.getOrPut(y) { mutableMapOf() }.put(x, v)
+        f.getOrPut(y) { mutableMapOf() }[x] = v
     }
 
     private fun range(a: Int, b: Int): IntRange {
@@ -74,16 +78,17 @@ class Day14(private val pointLists: List<List<Day14Point>>) {
         build()
 
         var cnt = 0
-        while (fall()) {
+        while (getCell(Pair(500, 0)) == null) {
+            fall()
             cnt += 1
         }
 
         return cnt
     }
 
-    private fun fall(): Boolean {
+    private fun fall() {
         var p = Pair(500, 0)
-        while (p.second <= h) {
+        while (true) {
             val (x, y) = p
             if (getCell(Pair(x, y + 1)) == null) {
                 p = Pair(x, y + 1)
@@ -101,10 +106,7 @@ class Day14(private val pointLists: List<List<Day14Point>>) {
                 continue
             }
             setCell(p, Day14Cell.Sand)
-            return true
+            return
         }
-
-        // p's y is greater than the max. The sand does not stop.
-        return false
     }
 }
