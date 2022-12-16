@@ -1,20 +1,20 @@
 import kotlin.math.absoluteValue
+import kotlin.math.max
 
 class Day15(private val sensors: List<Sensor>) {
-    data class Sensor(val x: Int, val y: Int, val closestBeacon: Pair<Int, Int>) {
-        val distance = distanceFromSensor(closestBeacon)
+    data class Sensor(val x: Long, val y: Long, val closestBeacon: Pair<Long, Long>) {
+        private val distance = distanceFromSensor(closestBeacon)
 
-        fun xRangeOf(yy: Int): Pair<Int, Int>? {
+        fun xRangeOf(yy: Long): Pair<Long, Long>? {
             val rest = distance - (yy - y).absoluteValue
-            if (rest <= 0) {
+            if (rest < 0) {
                 return null
             }
 
-            println("beacon at ($x, $y), distance = $distance -> ${x - rest} - ${x + rest}")
             return Pair(x - rest, x + rest)
         }
 
-        private fun distanceFromSensor(p: Pair<Int, Int>): Int {
+        private fun distanceFromSensor(p: Pair<Long, Long>): Long {
             val (xx, yy) = p
             return (xx - x).absoluteValue + (yy - y).absoluteValue
         }
@@ -33,60 +33,44 @@ class Day15(private val sensors: List<Sensor>) {
         private fun parse(lines: List<String>): List<Sensor> {
             return lines.map {
                 val m = regex.matchEntire(it)!!
-                val x = m.groups[1]!!.value.toInt()
-                val y = m.groups[2]!!.value.toInt()
-                val xx = m.groups[3]!!.value.toInt()
-                val yy = m.groups[4]!!.value.toInt()
+                val x = m.groups[1]!!.value.toLong()
+                val y = m.groups[2]!!.value.toLong()
+                val xx = m.groups[3]!!.value.toLong()
+                val yy = m.groups[4]!!.value.toLong()
                 Sensor(x, y, Pair(xx, yy))
             }
         }
     }
 
     // 😅
-    private val targetY = if (sensors.size == 14) {
-        10
+    private val len = if (sensors.size == 14) {
+        20L
     } else {
-        2000000
+        4000000L
     }
 
-    private val minX = sensors.minOf { it.x - it.distance }
-    private val maxX = sensors.maxOf { it.x + it.distance }
-
-    private fun solve(): Int {
-        fun idxOf(x: Int): Int {
-            return x - minX
-        }
-
-        val xs = MutableList(maxX - minX + 2) { 0 }
-        for (sensor in sensors) {
-            val r = sensor.xRangeOf(targetY)
-            if (r != null) {
-                val (x1, x2) = r
-                xs[idxOf(x1)] += 1
-                xs[idxOf(x2 + 1)] -= 1
+    private fun solve(): Long {
+        for (y in 0..len) {
+            val skippables = mutableListOf<Pair<Long, Long>>()
+            for (sensor in sensors) {
+                val (x1, x2) = sensor.xRangeOf(y) ?: continue
+                skippables.add(Pair(x1, x2))
+            }
+            var x = 0L
+            val sorted = skippables.sortedBy { it.first }
+            for ((beg, end) in sorted) {
+                if (beg <= x) {
+                    x = max(x, end + 1)
+                } else {
+                    if (x > len) {
+                        break
+                    }
+                    // found
+                    return x * 4000000 + y
+                }
             }
         }
-        for (i in 0 until xs.size - 1) {
-            xs[i + 1] += xs[i]
-        }
-//
-//        val msg = xs.map {
-//            if (it > 0) {
-//                '#'
-//            } else {
-//                '.'
-//            }
-//        }.joinToString("")
-//        println(msg)
-        val okXs = xs.withIndex().filter { (_, v) ->
-            v > 0
-        }.map { (idx, _) -> idx + minX }.filter { x ->
-            !sensors.any { sensor ->
-                Pair(x, targetY) == sensor.closestBeacon ||
-                        Pair(x, targetY) == Pair(sensor.x, sensor.y)
-            }
-        }
-
-        return okXs.size
+        assert(false) { "should not reach here, no answer found" }
+        return 0
     }
 }
