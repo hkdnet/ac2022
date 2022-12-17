@@ -1,4 +1,4 @@
 @Suppress("UNUSED_PARAMETER")
 fun main(_args: Array<String>) {
-    Day15.exec()
+    Day16.exec()
 }
