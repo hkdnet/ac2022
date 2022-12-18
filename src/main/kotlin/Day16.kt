@@ -2,27 +2,34 @@ import kotlin.math.max
 
 class Day16(private val valves: List<Valve>) {
     data class Valve(val name: String, val rate: Int, val tunnels: List<String>)
-    data class State(val cur: String, val restMinutes: Int, val opened: List<String>) {
-        companion object {
-            fun load(s: String): State {
-                val arr = s.split("$")
-
-                return State(
-                    arr[0],
-                    arr[1].toInt(),
-                    arr[2].split(",")
-                )
+    data class State(
+        val cur1: String, val restMinutes1: Int, val cur2: String, val restMinutes2: Int, val opened: List<String>
+    ) {
+        fun normalize(): State {
+            return if (restMinutes1 == restMinutes2) {
+                if (cur1 <= cur2) {
+                    this
+                } else {
+                    State(cur2, restMinutes2, cur1, restMinutes1, opened)
+                }
+            } else if (restMinutes1 > restMinutes2) {
+                this
+            } else {
+                State(cur2, restMinutes2, cur1, restMinutes1, opened)
             }
         }
 
-        fun dump(): String {
-            return "$cur$${restMinutes}$${opened.joinToString(",")}"
+        fun open(s: String): List<String> {
+            val l = opened.toMutableList()
+            l.add(s)
+            return l.sorted()
         }
     }
 
+
     private val valvesByName = valves.associateBy { it.name }
     private val targetValveNames =
-        valves.filter { it.name == "AA" || it.rate != 0 }.sortedBy { it.name }.map { it.name }
+        valves.filter { it.name == "AA" || it.rate != 0 }.map { it.name }.sorted()
     private var valveToValveCostMap: Map<String, Map<String, Int>> = mapOf()
 
     companion object {
@@ -49,51 +56,88 @@ class Day16(private val valves: List<Valve>) {
     private fun solve(): Int {
         build()
 
-        val dp = List(31) { mutableMapOf<String, Int>() }
+        val dp = List(27) { mutableMapOf<State, Int>() }
 
-        val initialState = State("AA", 30, listOf())
-        dp[0][initialState.dump()] = 0
-        var m = 0
-        while (m <= 30) {
-            for ((stateDump, point) in dp[m]) {
-                val s = State.load(stateDump)
-                val curValve = valvesByName[s.cur]!!
-                if (curValve.rate != 0 && !s.opened.contains(curValve.name)) {
-                    // open
-                    val rest = s.restMinutes - 1
-                    val newPoint = point + rest * curValve.rate
-                    val newOpened = s.opened.toMutableList()
-                    newOpened.add(curValve.name)
-                    val newState = State(curValve.name, rest, newOpened.sorted())
-                    val newDump = newState.dump()
-                    val nextIndex = m + 1
-                    if (nextIndex < dp.size) {
-                        val nextPoint = dp[nextIndex][newDump]
-                        if (nextPoint != null) {
-                            dp[nextIndex][newDump] = max(nextPoint, newPoint)
-                        } else {
-                            dp[nextIndex][newDump] = newPoint
-                        }
-                    }
-                }
-                for ((nx, timeCost) in valveToValveCostMap[curValve.name]!!.entries) {
-                    val newState = State(nx, s.restMinutes - timeCost, s.opened)
-                    val newDump = newState.dump()
-                    val nextIndex = m + timeCost
-                    if (nextIndex < dp.size) {
-                        val nextPoint = dp[nextIndex][newDump]
-                        if (nextPoint != null) {
-                            dp[nextIndex][newDump] = max(nextPoint, point)
-                        } else {
-                            dp[nextIndex][newDump] = point
-                        }
-                    }
+        val initialState = State("AA", 26, "AA", 26, listOf())
+        dp[26][initialState] = 0
+        var m = 26
+
+        fun updateDp(s: State, point: Int) {
+            val nextIndex = s.restMinutes1
+            if (nextIndex in dp.indices) {
+                val nextPoint = dp[nextIndex][s]
+                if (nextPoint != null) {
+                    dp[nextIndex][s] = max(nextPoint, point)
+                } else {
+                    dp[nextIndex][s] = point
                 }
             }
-            m += 1
         }
 
-        return dp.maxOf { it.values.maxOrNull() ?: 0 }
+        var max = 0
+        val threshold = if (valves.size == 10) {
+            1651
+        } else {
+            2330
+        }
+
+        val pointMap = valves.filter { it.rate > 0 }.associate { Pair(it.name, it.rate) }
+
+        fun possiblePoints(s: State): Int {
+            return pointMap.entries.filter { (k, _) -> !s.opened.contains(k) }.sumOf { (k, v) ->
+                if (s.cur1 == k) {
+                    v * (s.restMinutes1 - 1)
+                } else if (s.cur2 == k) {
+                    v * (s.restMinutes1 - 1)
+                } else {
+                    val moveCost1 = valveToValveCostMap[s.cur1]!![k]!!
+                    val moveCost2 = valveToValveCostMap[s.cur2]!![k]!!
+                    max(
+                        v * (s.restMinutes1 - moveCost1 - 1), v * (s.restMinutes2 - moveCost2 - 1)
+                    )
+                }
+
+            }
+        }
+
+        while (m > 0) {
+            while (dp[m].isNotEmpty()) {
+                val s = dp[m].keys.first()
+                val point = dp[m][s]!!
+
+                if (point + possiblePoints(s) <= threshold) {
+                    dp[m].remove(s) // done
+                    // println("skipped $s")
+                    continue
+                }
+
+                val curValve = valvesByName[s.cur1]!!
+                if (curValve.rate != 0 && !s.opened.contains(curValve.name)) {
+                    // open
+                    val rest = s.restMinutes1 - 1
+                    val newPoint = point + rest * curValve.rate
+                    val newOpened = s.open(curValve.name)
+
+                    if (rest > 0) {
+                        max = max(newPoint, max)
+                    }
+
+                    // swap 1 and 2 if required
+                    val newState = State(curValve.name, rest, s.cur2, s.restMinutes2, newOpened).normalize()
+                    updateDp(newState, newPoint)
+                }
+                for ((nx, timeCost) in valveToValveCostMap[curValve.name]!!.entries) {
+                    // swap if required
+                    val newState = State(nx, s.restMinutes1 - timeCost, s.cur2, s.restMinutes2, s.opened).normalize()
+                    updateDp(newState, point)
+                }
+
+                dp[m].remove(s)
+            }
+            m -= 1
+            println(m)
+        }
+        return max
     }
 
     private fun build() {
