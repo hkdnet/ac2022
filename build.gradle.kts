@@ -20,6 +20,7 @@ dependencies {
 
 tasks.named<JavaExec>("run") {
     standardInput = System.`in`
+    enableAssertions = true
 }
 
 tasks.test {
