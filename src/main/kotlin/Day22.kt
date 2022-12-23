@@ -10,6 +10,10 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
         operator fun plus(o: Point): Point {
             return Point(x + o.x, y + o.y)
         }
+
+        operator fun times(v: Int): Point {
+            return Point(x * v, y * v)
+        }
     }
 
     enum class Cell {
@@ -129,11 +133,6 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
 
     private val startPoint
         get() = Point(0, field[0].indexOf(Cell.Tile))
-
-    private val xMinMap = mutableMapOf<Int, Int>()
-    private val xMaxMap = mutableMapOf<Int, Int>()
-    private val yMinMap = mutableMapOf<Int, Int>()
-    private val yMaxMap = mutableMapOf<Int, Int>()
 
     private val xMin = 0
     private val xMax = field.size - 1
@@ -258,40 +257,20 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
     46o
     5oo
      */
+    private val faceIdToPoint = mapOf(
+        1 to Point(0, 1),
+        3 to Point(0, 2),
+        2 to Point(1, 1),
+        4 to Point(2, 0),
+        6 to Point(2, 1),
+        5 to Point(3, 0)
+    )
+    private val pointToFaceId = faceIdToPoint.map { (k, v) -> Pair(v, k) }.toMap()
     private fun faceOf(p: Point): Int {
         val (x, y) = p
         val xx = x / 50
         val yy = y / 50
-        return when (Pair(xx, yy)) {
-            Pair(0, 1) -> 1
-            Pair(0, 2) -> 3
-            Pair(1, 1) -> 2
-            Pair(2, 0) -> 4
-            Pair(2, 1) -> 6
-            Pair(3, 0) -> 5
-            else -> {
-                TODO("unreachable")
-            }
-        }
-    }
-
-    private fun normalizePoint(p: Point): Point {
-        if (p.x < 0) {
-            return normalizePoint(Point(xMax + p.x + 1, p.y))
-        }
-        if (p.x > xMax) {
-            val delta = p.x - xMax
-            return normalizePoint(Point(delta - 1, p.y))
-        }
-        if (p.y < 0) {
-            return normalizePoint(Point(p.x, yMax + p.y + 1))
-        }
-        if (p.y > yMax) {
-            val delta = p.y - yMax
-            return normalizePoint(Point(p.x, delta - 1))
-        }
-
-        return p
+        return pointToFaceId[Point(xx, yy)]!!
     }
 
     private fun warp(p: Point, d: Direction): Pair<Point, Direction> {
@@ -328,71 +307,17 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
     46o
     5oo
      */
+    private val len = 50
     private fun rightEdgeOf(faceId: Int, d: Direction): Point {
         val delta = when (d) {
-            Direction.N -> Point(0, 49)
-            Direction.E -> Point(49, 49)
+            Direction.N -> Point(0, len - 1)
+            Direction.E -> Point(len - 1, len - 1)
             Direction.W -> Point(0, 0)
-            Direction.S -> Point(49, 0)
+            Direction.S -> Point(len - 1, 0)
         }
-        val base = when (faceId) {
-            1 -> Point(0, 50)
-            2 -> Point(50, 50)
-            3 -> Point(0, 100)
-            4 -> Point(100, 0)
-            5 -> Point(150, 0)
-            6 -> Point(50, 50)
-            else -> {
-                TODO("unreachable")
-            }
-        }
+        val base = faceIdToPoint[faceId]!! * 50
         return base + delta
     }
-
-    private fun xMaxOf(y: Int): Int {
-        return xMaxMap.getOrPut(y) {
-            for (x in xMax downTo xMin) {
-                if (cellOf(Point(x, y)) != Cell.Empty) {
-                    return x
-                }
-            }
-            TODO("unreachable")
-        }
-    }
-
-    private fun xMinOf(y: Int): Int {
-        return xMinMap.getOrPut(y) {
-            for (x in xMin..xMax) {
-                if (cellOf(Point(x, y)) != Cell.Empty) {
-                    return x
-                }
-            }
-            TODO("unreachable")
-        }
-    }
-
-    private fun yMaxOf(x: Int): Int {
-        return yMaxMap.getOrPut(x) {
-            for (y in yMax downTo yMin) {
-                if (cellOf(Point(x, y)) != Cell.Empty) {
-                    return y
-                }
-            }
-            TODO("unreachable")
-        }
-    }
-
-    private fun yMinOf(x: Int): Int {
-        return yMinMap.getOrPut(x) {
-            for (y in yMin..yMax) {
-                if (cellOf(Point(x, y)) != Cell.Empty) {
-                    return y
-                }
-            }
-            TODO("unreachable")
-        }
-    }
-
 
     private fun cellOf(p: Point): Cell {
         val (x, y) = p
