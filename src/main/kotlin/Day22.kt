@@ -1,3 +1,5 @@
+import java.awt.PointerInfo
+
 class Day22(private val field: List<List<Cell>>, private val instructions: List<Instruction>) {
     sealed interface Instruction
     data class Step(val n: Int) : Instruction
@@ -55,6 +57,10 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
                 W -> Point(0, -1)
                 N -> Point(-1, 0)
             }
+        }
+
+        fun opposite(): Direction {
+            return toLeft().toLeft()
         }
     }
 
@@ -134,7 +140,61 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
     private val yMin = 0
     private val yMax = field[0].size - 1
 
+    /*
+        o13
+        o2o
+        46o
+        5oo
+
+        1N -> 5W
+        1E -> 3W
+        1W -> 4W
+        1S -> 2N
+        2N -> 1S
+        2E -> 3S
+        2W -> 4N
+        2S -> 6N
+        3N -> 5S
+        3E -> 6E
+        3W -> 1E
+        3S -> 2E
+        4N -> 2W
+        4E -> 6W
+        4W -> 1W
+        4S -> 5N
+        5N -> 4S
+        5E -> 6S
+        5W -> 1N
+        5S -> 3N
+        6N -> 2S
+        6E -> 3E
+        6W -> 4E
+        6S -> 5E
+     */
+    private val f2f: Map<Pair<Int, Direction>, Pair<Int, Direction>> = mapOf(
+        Pair(1, Direction.N) to Pair(5, Direction.W), Pair(1, Direction.E) to Pair(3, Direction.W),
+        Pair(1, Direction.W) to Pair(4, Direction.W), Pair(1, Direction.S) to Pair(2, Direction.N),
+        Pair(2, Direction.N) to Pair(1, Direction.S), Pair(2, Direction.E) to Pair(3, Direction.S),
+        Pair(2, Direction.W) to Pair(4, Direction.N), Pair(2, Direction.S) to Pair(6, Direction.N),
+        Pair(3, Direction.N) to Pair(5, Direction.S), Pair(3, Direction.E) to Pair(6, Direction.E),
+        Pair(3, Direction.W) to Pair(1, Direction.E), Pair(3, Direction.S) to Pair(2, Direction.E),
+        Pair(4, Direction.N) to Pair(2, Direction.W), Pair(4, Direction.E) to Pair(6, Direction.W),
+        Pair(4, Direction.W) to Pair(1, Direction.W), Pair(4, Direction.S) to Pair(5, Direction.N),
+        Pair(5, Direction.N) to Pair(4, Direction.S), Pair(5, Direction.E) to Pair(6, Direction.S),
+        Pair(5, Direction.W) to Pair(1, Direction.N), Pair(5, Direction.S) to Pair(3, Direction.N),
+        Pair(6, Direction.N) to Pair(2, Direction.S), Pair(6, Direction.E) to Pair(3, Direction.E),
+        Pair(6, Direction.W) to Pair(4, Direction.E), Pair(6, Direction.S) to Pair(5, Direction.E)
+    )
+
+    private fun check() {
+        assert(f2f.keys.size == f2f.values.size)
+        for (k in f2f.keys) {
+            assert(f2f[f2f[k]] == k)
+        }
+    }
+
     private fun solve(): Int {
+        check()
         var p = startPoint
         var d = Direction.E
 
@@ -147,13 +207,14 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
                 is Step -> {
                     for (i in 0 until insn.n) {
                         println("step ${i + 1}")
-                        val nextPoint = step(p, d)
+                        val (nextPoint, nextDirection) = step(p, d)
                         if (p == nextPoint) {
                             println("$p -> $nextPoint, failed")
                             break
                         }
-                        println("$p -> $nextPoint, OK")
+                        println("$p -> $nextPoint and $d -> $nextDirection OK")
                         p = nextPoint
+                        d = nextDirection
                     }
                 }
             }
@@ -163,21 +224,53 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
         return answer(p, d)
     }
 
-    private fun step(p: Point, d: Direction): Point {
-        val nextPoint = normalizePoint(p + d.toVec())
+    private fun step(p: Point, d: Direction): Pair<Point, Direction> {
+        val nextPoint = p + d.toVec()
+
+        fun doWarp(): Pair<Point, Direction> {
+            val (warpPoint, warpDirection) = warp(p, d)
+            print("warped to $p -> $warpPoint")
+            val warpDestination = cellOf(warpPoint)
+            println("($warpDestination)")
+            return if (warpDestination == Cell.Tile) {
+                Pair(warpPoint, warpDirection)
+            } else {
+                assert(warpDestination == Cell.Wall) { "warp destination must be tile or wall but $warpDestination" }
+                Pair(p, d)
+            }
+        }
+
+        if (nextPoint.x !in xMin..xMax || nextPoint.y !in yMin..yMax) {
+            println("reached the edge")
+            return doWarp()
+        }
+
         return when (cellOf(nextPoint)) {
-            Cell.Tile -> nextPoint
-            Cell.Wall -> p
-            Cell.Empty -> {
-                val warpPoint = warp(p, d)
-                val warpDestination = cellOf(warpPoint)
-                println("warped to $p -> $warpPoint($warpDestination)")
-                if (warpDestination == Cell.Tile) {
-                    warpPoint
-                } else {
-                    assert(warpDestination == Cell.Wall) { "warp destination must be tile or wall but $warpDestination" }
-                    p
-                }
+            Cell.Empty -> doWarp()
+            Cell.Tile -> Pair(nextPoint, d)
+            Cell.Wall -> Pair(p, d)
+        }
+    }
+
+    /*
+    o13
+    o2o
+    46o
+    5oo
+     */
+    private fun faceOf(p: Point): Int {
+        val (x, y) = p
+        val xx = x / 50
+        val yy = y / 50
+        return when (Pair(xx, yy)) {
+            Pair(0, 1) -> 1
+            Pair(0, 2) -> 3
+            Pair(1, 1) -> 2
+            Pair(2, 0) -> 4
+            Pair(2, 1) -> 6
+            Pair(3, 0) -> 5
+            else -> {
+                TODO("unreachable")
             }
         }
     }
@@ -201,13 +294,59 @@ class Day22(private val field: List<List<Cell>>, private val instructions: List<
         return p
     }
 
-    private fun warp(p: Point, d: Direction): Point {
-        return when (d) {
-            Direction.N -> Point(xMaxOf(p.y), p.y)
-            Direction.E -> Point(p.x, yMinOf(p.x))
-            Direction.S -> Point(xMinOf(p.y), p.y)
-            Direction.W -> Point(p.x, yMaxOf(p.x))
+    private fun warp(p: Point, d: Direction): Pair<Point, Direction> {
+        val (x, y) = p
+        val f = faceOf(p)
+        val distanceFromLeftEdge = when (d) {
+            Direction.N -> y % 50
+            Direction.S -> 49 - y % 50
+            Direction.E -> x % 50
+            Direction.W -> 49 - x % 50
         }
+        val (destFace, destFaceEdge) = f2f[Pair(f, d)]!!
+        println("$p on $f(edge: $d) -> $destFace(edge: $destFaceEdge)")
+        println("The point is far from the left edge by $distanceFromLeftEdge")
+        val destDirection =
+            destFaceEdge.opposite() // We reached destFaceEdge. It means we will go the opposite direction.
+        println("going to $destDirection")
+        val destRightEdge = rightEdgeOf(destFace, destFaceEdge)
+        val destPoint = destRightEdge + when (destFaceEdge) {
+            Direction.N -> Point(0, -distanceFromLeftEdge)
+            Direction.E -> Point(-distanceFromLeftEdge, 0)
+            Direction.W -> Point(distanceFromLeftEdge, 0)
+            Direction.S -> Point(0, distanceFromLeftEdge)
+        }
+        println("reached $destPoint")
+
+        return Pair(destPoint, destDirection)
+    }
+
+
+    /*
+    o13
+    o2o
+    46o
+    5oo
+     */
+    private fun rightEdgeOf(faceId: Int, d: Direction): Point {
+        val delta = when (d) {
+            Direction.N -> Point(0, 49)
+            Direction.E -> Point(49, 49)
+            Direction.W -> Point(0, 0)
+            Direction.S -> Point(49, 0)
+        }
+        val base = when (faceId) {
+            1 -> Point(0, 50)
+            2 -> Point(50, 50)
+            3 -> Point(0, 100)
+            4 -> Point(100, 0)
+            5 -> Point(150, 0)
+            6 -> Point(50, 50)
+            else -> {
+                TODO("unreachable")
+            }
+        }
+        return base + delta
     }
 
     private fun xMaxOf(y: Int): Int {
