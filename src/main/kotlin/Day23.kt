@@ -95,32 +95,29 @@ class Day23(private val initialElves: MutableSet<Point>) {
                 ret
             }
         }
-        val cycles = 10
-
         var elves = initialElves.toSet()
 
-        display(elves)
-
-        repeat(cycles) {
-            println("===${it + 1} Cycle starts")
+        var ans = 1
+        while (true) {
+            println("$ans times")
             val curDirections = rotateDirections()
-            println("Use this: $curDirections")
             val nextPoints = mutableMapOf<Point, Point>() // next -> orig
             val duplicates = mutableMapOf<Point, Point>() // orig -> next
+
+            var allElvesStopped = true
             for (elf in elves) {
-                println("Considering $elf")
                 if (elf.eightAdjacent().all { !elves.contains(it) }) {
                     duplicates[elf] = elf
                     continue
                 }
+
+                allElvesStopped = false
                 var isSet = false
                 for (d in curDirections) {
                     if (isSet) {
                         break
                     }
-                    println("Checking $d")
                     if (elf.checkPoints(d).all { !elves.contains(it) }) {
-                        println("OK!")
                         // The elf can go to the direction.
                         val nextPoint = elf.stepTo(d)
                         if (nextPoints.contains(nextPoint)) {
@@ -135,6 +132,11 @@ class Day23(private val initialElves: MutableSet<Point>) {
                     duplicates[elf] = elf
                 }
             }
+
+            if (allElvesStopped) {
+                break
+            }
+            ans += 1
             val nextElves = mutableSetOf<Point>()
             for ((nx, orig) in nextPoints) {
                 if (!duplicates.containsValue(nx)) {
@@ -144,22 +146,10 @@ class Day23(private val initialElves: MutableSet<Point>) {
                 }
             }
 
-            println("nextElves: $nextPoints")
-            println("duplicates: $duplicates")
             duplicates.keys.toCollection(nextElves)
             assert(elves.size == nextElves.size) { "elf disappeared!?" }
             elves = nextElves
-
-            println("=== ${it + 1}th round finished.")
-            display(elves)
         }
-
-        val minX = elves.minOf { it.x }
-        val maxX = elves.maxOf { it.x }
-        val minY = elves.minOf { it.y }
-        val maxY = elves.maxOf { it.y }
-
-        println("X: $minX - $maxX, Y: $minY - $maxY")
-        return (maxX - minX + 1) * (maxY - minY + 1) - elves.size
+        return ans
     }
 }
