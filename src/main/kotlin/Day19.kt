@@ -44,12 +44,14 @@ class Day19(private val bluePrints: List<BluePrint>) {
     }
 
     private fun solve(): Int {
-        return bluePrints.map { bestGeodeCount(it) }.withIndex().sumOf { (idx, ans) ->
-            val i = idx + 1
-            val v = i * ans
-            println("BluePrint $i * $ans = $v")
-            v
+        val arr = bluePrints.take(3).map { bestGeodeCount(it) }
+        println("1: ${arr[0]}")
+        println("2: ${arr[1]}")
+        if (arr.size > 2) {
+            println("3: ${arr[2]}")
         }
+
+        return arr[0] * arr[1] * arr[2]
     }
 
     data class Counts(val ore: Int, val clay: Int, val obsidian: Int, val geode: Int) {
@@ -92,18 +94,19 @@ class Day19(private val bluePrints: List<BluePrint>) {
 
         var maxGeode = 0
         val width = 2
-        val pqs = List(26) { PriorityQueue<ComparableState>() }
-        val visited = List(26) { mutableSetOf<State>() }
+        val maxMinutes = 32
+        val pqs = List(maxMinutes + 2) { PriorityQueue<ComparableState>() }
+        val visited = List(maxMinutes + 2) { mutableSetOf<State>() }
         fun stateInserter(i: Int, s: State) {
             val score = calcScore(s)
             pqs[i].add(ComparableState(-score, s))
         }
-        stateInserter(1, State(24, Counts(0, 0, 0, 0), Counts(1, 0, 0, 0)))
+        stateInserter(1, State(maxMinutes, Counts(0, 0, 0, 0), Counts(1, 0, 0, 0)))
 
         val loops = 100
 
         for (i in 0 until loops) {
-            for (minutes in 1..24) {
+            for (minutes in 1..maxMinutes) {
                 println("$minutes minutes")
                 val pq = pqs[minutes]
 
