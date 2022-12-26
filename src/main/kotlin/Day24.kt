@@ -42,30 +42,13 @@ class Day24(private val field: Field) {
     private val height = field.goal.x
     private val cycleLength = lcm(width + 1, height - 1)
 
-    fun solve(): Int {
-        val nWinds = field.winds.filter { it.d == Direction.N }
-        val sWinds = field.winds.filter { it.d == Direction.S }
-        val eWinds = field.winds.filter { it.d == Direction.E }
-        val wWinds = field.winds.filter { it.d == Direction.W }
+    private val windsByCycle = run {
+        (0 until cycleLength).map {
+            val nWinds = field.winds.filter { it.d == Direction.N }
+            val sWinds = field.winds.filter { it.d == Direction.S }
+            val eWinds = field.winds.filter { it.d == Direction.E }
+            val wWinds = field.winds.filter { it.d == Direction.W }
 
-        fun normalizeWind(p: Vec2): Vec2 {
-            val (x, y) = p
-            if (x <= 0) {
-                return normalizeWind(Vec2(height + x - 1, y))
-            }
-            if (x >= height) {
-                return normalizeWind(Vec2(x - height + 1, y))
-            }
-            if (y < 0) {
-                return normalizeWind(Vec2(x, width + y + 1))
-            }
-            if (y > width) {
-                return normalizeWind(Vec2(x, y - width - 1))
-            }
-            return p
-        }
-
-        val windsByCycle = (0 until cycleLength).map {
             val nDelta = Vec2(-1, 0) * it
             val sDelta = Vec2(1, 0) * it
             val eDelta = Vec2(0, 1) * it
@@ -77,35 +60,69 @@ class Day24(private val field: Field) {
             wWinds.mapTo(s) { wind -> normalizeWind(wind.startAt + wDelta) }
             s
         }
+    }
 
-        fun nextPoints(p: Vec2): List<Vec2> {
-            val (x, y) = p
-            if (x == 0) {
-                assert(y == 0) { "($x, $y) is passed but it should not be allowed!" }
-                return listOf(Vec2(1, y))
-            }
-            val l = mutableListOf<Vec2>(p)
-            if (p == field.goal + Vec2(-1, 0)) {
-                l.add(field.goal)
-            }
-            if (x < height - 1) {
-                l.add(p + Vec2(1, 0))
-            }
-            if (x > 1) {
-                l.add(p + Vec2(-1, 0))
-            }
-            if (y > 0) {
-                l.add(p + Vec2(0, -1))
-            }
-            if (y < width) {
-                l.add(p + Vec2(0, 1))
-            }
-            return l
+    fun solve(): Int {
+        val a = run(field.start, field.goal, 0)
+        println("S to G: $a")
+        val b = run(field.goal, field.start, a)
+        println("G to S: ${b-a}")
+        val c = run(field.start, field.goal, b)
+        println("S to G: ${c-b}")
+
+        return c
+    }
+
+    private fun normalizeWind(p: Vec2): Vec2 {
+        val (x, y) = p
+        if (x <= 0) {
+            return normalizeWind(Vec2(height + x - 1, y))
         }
+        if (x >= height) {
+            return normalizeWind(Vec2(x - height + 1, y))
+        }
+        if (y < 0) {
+            return normalizeWind(Vec2(x, width + y + 1))
+        }
+        if (y > width) {
+            return normalizeWind(Vec2(x, y - width - 1))
+        }
+        return p
+    }
 
+    private fun nextPoints(p: Vec2): List<Vec2> {
+        val (x, y) = p
+        if (x == 0) {
+            return listOf(Vec2(1, y), Vec2(0, 0))
+        }
+        if (x == height) {
+            return listOf(Vec2(height - 1, y), Vec2(x, y))
+        }
+        val l = mutableListOf<Vec2>(p)
+        if (p == field.goal + Vec2(-1, 0)) {
+            l.add(field.goal)
+        }
+        if (p == field.start + Vec2(1, 0)) {
+            l.add(field.start)
+        }
+        if (x < height - 1) {
+            l.add(p + Vec2(1, 0))
+        }
+        if (x > 1) {
+            l.add(p + Vec2(-1, 0))
+        }
+        if (y > 0) {
+            l.add(p + Vec2(0, -1))
+        }
+        if (y < width) {
+            l.add(p + Vec2(0, 1))
+        }
+        return l
+    }
+
+    fun run(from: Vec2, to: Vec2, offset: Int): Int {
         val q = ArrayDeque<Pair<Int, Vec2>>()
-        q.addLast(Pair(0, Vec2(0, 0)))
-
+        q.addLast(Pair(offset, from))
 
         val visitedByCycle = List(cycleLength) { mutableSetOf<Vec2>() }
 
@@ -122,7 +139,7 @@ class Day24(private val field: Field) {
                 if (winds.contains(nx)) {
                     continue
                 }
-                if (nx == field.goal) {
+                if (nx == to) {
                     return nextStep
                 }
 
@@ -132,7 +149,7 @@ class Day24(private val field: Field) {
                 }
             }
         }
-        println("not reached to the goal!!!!!")
-        return -1
+
+        throw Exception("not reached to the goal!!!!!")
     }
 }
